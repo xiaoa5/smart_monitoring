@@ -5,8 +5,8 @@
 ### Step 1: Install Dependencies
 
 ```python
-# Install required packages
-!pip install -q pybullet==3.2.7 torch scipy matplotlib
+# Install required packages (numpy already included in Colab)
+!pip install -q torch scipy matplotlib
 
 # Clone repository (if not already done)
 # !git clone https://github.com/xiaoa5/smart_monitoring.git
@@ -16,7 +16,8 @@
 ### Step 2: Generate Test Data
 
 ```python
-# Quick test data generation (50 frames, ~30 seconds)
+# Quick test data generation (50 frames, instant!)
+# No PyBullet required - uses synthetic data
 !python generate_test_data.py
 ```
 
