@@ -372,9 +372,25 @@ class MultiCameraDataset(Dataset):
         """Load data from all camera JSON files."""
         camera_data = {}
 
+        # Check if directory exists
+        if not os.path.exists(self.json_dir):
+            raise FileNotFoundError(
+                f"Data directory not found: {self.json_dir}\n"
+                f"Please run Phase 1 data generation first:\n"
+                f"  python path2_phase1_2_verified.py"
+            )
+
         # Find all camera JSON files
         json_files = [f for f in os.listdir(self.json_dir)
                      if f.startswith('cam_') and f.endswith('.json')]
+
+        if not json_files:
+            raise FileNotFoundError(
+                f"No camera JSON files found in {self.json_dir}\n"
+                f"Expected files: cam_0.json, cam_1.json, etc.\n"
+                f"Please run Phase 1 data generation first:\n"
+                f"  python path2_phase1_2_verified.py"
+            )
 
         for json_file in json_files:
             # Extract camera ID
@@ -403,6 +419,13 @@ class MultiCameraDataset(Dataset):
 
         # Get number of frames (assume all cameras have same length)
         cam_ids = list(self.camera_data.keys())
+
+        if not cam_ids:
+            raise ValueError(
+                "No camera data loaded. Please run Phase 1 data generation first:\n"
+                "  python path2_phase1_2_verified.py"
+            )
+
         num_frames = len(self.camera_data[cam_ids[0]])
 
         # Get object IDs from first frame
