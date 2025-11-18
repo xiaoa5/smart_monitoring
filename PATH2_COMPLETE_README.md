@@ -183,7 +183,12 @@ model = ProbabilisticLSTMTracker(config)
 trainer = ProbabilisticTrainer(model, config)
 trainer.train(train_loader, val_loader, num_epochs=50)
 
-# Predict
+# Predict on validation sample
+sample = val_dataset[0]
+bbox_seq = sample['bbox_seq'].unsqueeze(0).to(device)
+camera_ids = sample['camera_ids'].unsqueeze(0).to(device)
+mask = sample['mask'].unsqueeze(0).to(device)
+
 mean, std = model.predict_distribution(bbox_seq, camera_ids, mask)
 ```
 

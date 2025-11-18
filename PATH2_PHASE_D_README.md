@@ -122,10 +122,11 @@ tracker.visualize_results(results)
 ```python
 import torch
 
-# Prepare input
-bbox_seq = ...      # [1, seq_len, num_cameras, 4]
-camera_ids = ...    # [1, seq_len, num_cameras]
-mask = ...          # [1, seq_len, num_cameras]
+# Get test sample
+sample = val_dataset[0]
+bbox_seq = sample['bbox_seq'].unsqueeze(0).to(device)
+camera_ids = sample['camera_ids'].unsqueeze(0).to(device)
+mask = sample['mask'].unsqueeze(0).to(device)
 
 # Predict without constraint
 mean, std = tracker.predict(
@@ -139,8 +140,9 @@ mean_refined, std_refined = tracker.predict(
     use_constraint=True
 )
 
-print(f"LSTM uncertainty:       {std.mean():.4f} m")
+print(f"LSTM uncertainty:        {std.mean():.4f} m")
 print(f"Constrained uncertainty: {std_refined.mean():.4f} m")
+print(f"Uncertainty reduction:   {(1 - std_refined.mean()/std.mean())*100:.1f}%")
 ```
 
 ## Configuration

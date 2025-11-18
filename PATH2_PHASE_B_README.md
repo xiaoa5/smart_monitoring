@@ -157,6 +157,15 @@ history = trainer.train(train_loader, val_loader, config.num_epochs)
 ### 2. Inference
 
 ```python
+# Get test sample from validation dataset
+sample = val_dataset[0]
+
+# Prepare input data (add batch dimension)
+bbox_seq = sample['bbox_seq'].unsqueeze(0).to(device)
+camera_ids = sample['camera_ids'].unsqueeze(0).to(device)
+mask = sample['mask'].unsqueeze(0).to(device)
+ground_truth = sample['pos_3d_seq'].cpu().numpy()
+
 # Predict distribution
 mean, std = model.predict_distribution(
     bbox_seq, camera_ids, mask
@@ -164,6 +173,7 @@ mean, std = model.predict_distribution(
 
 print(f"Predicted position: {mean[-1]}")
 print(f"Uncertainty (std): {std[-1]}")
+print(f"Ground truth: {ground_truth[-1]}")
 
 # 95% confidence interval
 lower_bound = mean[-1] - 1.96 * std[-1]
@@ -175,17 +185,29 @@ print(f"95% CI: [{lower_bound}, {upper_bound}]")
 
 ```python
 # Compare uncertainty with different camera counts
+import torch
 
-# Scenario 1: 4 cameras
-bbox_4cam = ...  # [1, seq_len, 4, 4]
-mean_4, std_4 = model.predict_distribution(bbox_4cam, ...)
+# Get a sample
+sample = val_dataset[0]
+bbox_seq_full = sample['bbox_seq'].unsqueeze(0).to(device)  # [1, seq_len, 4, 4]
+camera_ids_full = sample['camera_ids'].unsqueeze(0).to(device)
+mask_full = sample['mask'].unsqueeze(0).to(device)
 
-# Scenario 2: 1 camera
-bbox_1cam = ...  # [1, seq_len, 1, 4]
-mean_1, std_1 = model.predict_distribution(bbox_1cam, ...)
+# Scenario 1: All 4 cameras
+mean_4, std_4 = model.predict_distribution(
+    bbox_seq_full, camera_ids_full, mask_full
+)
 
-print(f"Uncertainty (4 cameras): {std_4[-1].mean():.4f}")
-print(f"Uncertainty (1 camera): {std_1[-1].mean():.4f}")
+# Scenario 2: Only 1 camera (mask out cameras 1, 2, 3)
+mask_1cam = mask_full.clone()
+mask_1cam[:, :, 1:] = True  # Mask cameras 1-3
+mean_1, std_1 = model.predict_distribution(
+    bbox_seq_full, camera_ids_full, mask_1cam
+)
+
+print(f"Uncertainty (4 cameras): {std_4[-1].mean():.4f} m")
+print(f"Uncertainty (1 camera):  {std_1[-1].mean():.4f} m")
+print(f"Increase ratio: {std_1[-1].mean() / std_4[-1].mean():.2f}x")
 
 # Expected: std_1 > std_4 (more cameras → less uncertainty)
 ```

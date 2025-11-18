@@ -290,6 +290,13 @@ Posterior (local frame):
 from path2_probabilistic_lstm import ProbabilisticLSTMTracker
 from path2_constraints import CircleConstraint, GaussianDistribution
 import torch
+import numpy as np
+
+# Get test sample
+sample = val_dataset[0]
+bbox_seq = sample['bbox_seq'].unsqueeze(0).to(device)
+camera_ids = sample['camera_ids'].unsqueeze(0).to(device)
+mask = sample['mask'].unsqueeze(0).to(device)
 
 # 1. Get LSTM prediction
 model = ProbabilisticLSTMTracker(config)
