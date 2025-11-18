@@ -509,12 +509,16 @@ class MultiCameraDataset(Dataset):
         # Add noise (data augmentation)
         if self.add_noise:
             # Add Gaussian noise to bboxes
-            noise = np.random.randn(*bbox_seq.shape) * self.noise_std
+            noise = np.random.randn(*bbox_seq.shape).astype(np.float32) * self.noise_std
             bbox_seq = bbox_seq + noise
 
             # Randomly drop observations
             drop_mask = np.random.rand(*mask.shape) < self.missing_prob
             mask = mask | drop_mask  # Combine masks
+
+        # Ensure float32 for PyTorch compatibility
+        bbox_seq = bbox_seq.astype(np.float32)
+        pos_3d_seq = pos_3d_seq.astype(np.float32)
 
         return {
             'bbox_seq': torch.from_numpy(bbox_seq),
@@ -551,8 +555,7 @@ class ProbabilisticTrainer:
             self.optimizer,
             mode='min',
             factor=0.5,
-            patience=5,
-            verbose=True
+            patience=5
         )
 
         # Metrics
@@ -654,7 +657,11 @@ class ProbabilisticTrainer:
             print(f"Val Std:    {val_metrics['uncertainty']:.6f}")
 
             # Learning rate scheduling
+            old_lr = self.optimizer.param_groups[0]['lr']
             self.scheduler.step(val_metrics['loss'])
+            new_lr = self.optimizer.param_groups[0]['lr']
+            if new_lr != old_lr:
+                print(f"Learning rate reduced: {old_lr:.6f} → {new_lr:.6f}")
 
             # Save best model
             if val_metrics['loss'] < best_val_loss:
