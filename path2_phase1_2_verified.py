@@ -25,7 +25,7 @@ import json
 import time
 from pathlib import Path
 from typing import List, Dict, Tuple, Optional
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass, asdict, field
 from enum import Enum
 
 import numpy as np
@@ -75,8 +75,11 @@ class ObjectState:
     bbox: List[float]        # [cx, cy, w, h] in YOLO format (normalized)
     bbox_pixels: List[int]  # [x1, y1, x2, y2] in pixels
     occlusion: float         # Occlusion level (0.0 = visible, 1.0 = occluded)
-    velocity: List[float]    # [vx, vy, vz]
+    velocity: List[float]    # [vx, vy, vz] - TRUE physical velocity from PyBullet
     motion_type: str
+    # Additional ground truth for advanced tracking
+    orientation: Optional[List[float]] = None  # [qx, qy, qz, qw] quaternion
+    angular_velocity: Optional[List[float]] = None  # [wx, wy, wz]
 
 
 @dataclass
@@ -470,13 +473,11 @@ class MotionSequenceGenerator:
                         continue
 
                     bbox_info = bboxes[body_id]
-                    pos_3d, _ = p.getBasePositionAndOrientation(body_id)
+                    pos_3d, orientation = p.getBasePositionAndOrientation(body_id)
 
-                    # Get velocity from motion
-                    velocity = motion_config['params'].get('velocity', [0, 0, 0])
-                    if motion_config['type'] == MotionType.BOUNCE:
-                        v = self.velocities[body_id]
-                        velocity = [v[0], v[1], 0]
+                    # Get TRUE velocity from PyBullet physics (not from motion config!)
+                    linear_vel, angular_vel = p.getBaseVelocity(body_id)
+                    velocity = list(linear_vel)  # True physical velocity
 
                     # Compute occlusion (simple: based on bbox size)
                     _, _, bw, bh = bbox_info['bbox_norm']
@@ -492,7 +493,9 @@ class MotionSequenceGenerator:
                         bbox_pixels=list(bbox_info['bbox_pixels']),
                         occlusion=occlusion,
                         velocity=velocity,
-                        motion_type=motion_config['type'].value
+                        motion_type=motion_config['type'].value,
+                        orientation=list(orientation),  # Full orientation
+                        angular_velocity=list(angular_vel)  # Angular velocity
                     )
                     objects_in_frame.append(obj_state)
 
