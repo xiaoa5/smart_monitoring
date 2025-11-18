@@ -187,8 +187,9 @@ def yolo_bboxes_from_seg(seg, body_ids, body_names, w, h, min_pixels=MIN_PIXELS)
         if ys.size < min_pixels:
             continue
 
-        x0, x1 = xs.min(), xs.max()
-        y0, y1 = ys.min(), ys.max()
+        # Convert NumPy int64 to Python int for JSON serialization
+        x0, x1 = int(xs.min()), int(xs.max())
+        y0, y1 = int(ys.min()), int(ys.max())
 
         # YOLO format: center_x, center_y, width, height (normalized)
         cx = (x0 + x1) / 2 / w
@@ -202,7 +203,7 @@ def yolo_bboxes_from_seg(seg, body_ids, body_names, w, h, min_pixels=MIN_PIXELS)
 
         bboxes[bid] = {
             'name': name,
-            'bbox_norm': (cx, cy, bw, bh),
+            'bbox_norm': (float(cx), float(cy), float(bw), float(bh)),
             'bbox_pixels': (x0, y0, x1, y1)
         }
 
@@ -530,8 +531,19 @@ class MotionSequenceGenerator:
             }
             data_list.append(frame_dict)
 
+        # Custom JSON encoder to handle NumPy types
+        class NumpyEncoder(json.JSONEncoder):
+            def default(self, obj):
+                if isinstance(obj, (np.integer, np.int64, np.int32)):
+                    return int(obj)
+                elif isinstance(obj, (np.floating, np.float64, np.float32)):
+                    return float(obj)
+                elif isinstance(obj, np.ndarray):
+                    return obj.tolist()
+                return super().default(obj)
+
         with open(output_file, 'w') as f:
-            json.dump(data_list, f, indent=2)
+            json.dump(data_list, f, indent=2, cls=NumpyEncoder)
 
         print(f"✅ Saved JSON to {output_file}")
 
