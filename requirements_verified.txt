@@ -1,0 +1,58 @@
+# Path 2 Implementation Requirements (Colab Verified)
+# Tested on Google Colab Pro+ with Python 3.11
+
+# ============================================================================
+# Core Dependencies (Verified Versions from Multi-Camera PyBullet notebook)
+# ============================================================================
+
+pybullet==3.2.7
+numpy==2.1.1
+torch>=2.5.0
+torchvision>=0.20.0
+opencv-python-headless==4.10.0.84
+matplotlib==3.9.2
+tqdm==4.66.5
+pyyaml==6.0.2
+
+# ============================================================================
+# Optional: YOLO Integration (for end-to-end tracking)
+# ============================================================================
+
+ultralytics==8.3.72
+
+# ============================================================================
+# Optional: 3DGS Integration (Path 1)
+# ============================================================================
+
+# gsplat==1.5.3
+# nerfstudio
+# plyfile
+# pythreejs
+# open3d
+
+# ============================================================================
+# Development Tools (Optional)
+# ============================================================================
+
+# pytest>=7.0.0
+# black>=22.0.0
+# flake8>=5.0.0
+
+# ============================================================================
+# Notes:
+# ============================================================================
+#
+# 1. For Colab installation:
+#    pip install pybullet==3.2.7 numpy==2.1.1 torch opencv-python-headless matplotlib tqdm pyyaml
+#
+# 2. For local installation with GUI:
+#    Replace opencv-python-headless with opencv-python
+#
+# 3. PyBullet EGL plugin:
+#    - Automatically available on Colab with GPU runtime
+#    - For local: May need to install mesa-utils
+#
+# 4. Torch CUDA:
+#    - Auto-installs CUDA version on Colab
+#    - For local: Install from https://pytorch.org/
+#
