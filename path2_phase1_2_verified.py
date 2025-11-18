@@ -545,10 +545,12 @@ class MotionSequenceGenerator:
                     return obj.tolist()
                 return super().default(obj)
 
-        with open(output_file, 'w') as f:
-            json.dump(data_list, f, indent=2, cls=NumpyEncoder)
-
-        print(f"✅ Saved JSON to {output_file}")
+        try:
+            with open(output_file, 'w') as f:
+                json.dump(data_list, f, indent=2, cls=NumpyEncoder)
+            print(f"✅ Saved JSON to {output_file}")
+        except IOError as e:
+            print(f"❌ Failed to save JSON to {output_file}: {e}")
 
     def cleanup(self):
         """Cleanup PyBullet"""
@@ -772,7 +774,7 @@ class LSTMTrackerTrainer:
 
             total_loss += loss.item()
 
-        return total_loss / len(train_loader)
+        return total_loss / max(len(train_loader), 1)
 
     def validate(self, val_loader: DataLoader) -> float:
         """Validate"""
@@ -789,7 +791,7 @@ class LSTMTrackerTrainer:
 
                 total_loss += loss.item()
 
-        return total_loss / len(val_loader)
+        return total_loss / max(len(val_loader), 1)
 
     def train(
         self,

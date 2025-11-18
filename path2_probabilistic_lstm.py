@@ -398,10 +398,13 @@ class MultiCameraDataset(Dataset):
 
             # Load JSON
             json_path = os.path.join(self.json_dir, json_file)
-            with open(json_path, 'r') as f:
-                data = json.load(f)
-
-            camera_data[cam_id] = data
+            try:
+                with open(json_path, 'r') as f:
+                    data = json.load(f)
+                camera_data[cam_id] = data
+            except (IOError, json.JSONDecodeError) as e:
+                print(f"Warning: Failed to load {json_file}: {e}")
+                continue
 
         return camera_data
 
@@ -509,7 +512,7 @@ class MultiCameraDataset(Dataset):
         # Add noise (data augmentation)
         if self.add_noise:
             # Add Gaussian noise to bboxes
-            noise = np.random.randn(*bbox_seq.shape) * self.noise_std
+            noise = np.random.randn(*bbox_seq.shape).astype(np.float32) * self.noise_std
             bbox_seq = bbox_seq + noise
 
             # Randomly drop observations
@@ -517,9 +520,9 @@ class MultiCameraDataset(Dataset):
             mask = mask | drop_mask  # Combine masks
 
         return {
-            'bbox_seq': torch.from_numpy(bbox_seq),
-            'pos_3d_seq': torch.from_numpy(pos_3d_seq),
-            'camera_ids': torch.from_numpy(camera_ids),
+            'bbox_seq': torch.from_numpy(bbox_seq).float(),
+            'pos_3d_seq': torch.from_numpy(pos_3d_seq).float(),
+            'camera_ids': torch.from_numpy(camera_ids).long(),
             'mask': torch.from_numpy(mask)
         }
 
@@ -551,8 +554,7 @@ class ProbabilisticTrainer:
             self.optimizer,
             mode='min',
             factor=0.5,
-            patience=5,
-            verbose=True
+            patience=5
         )
 
         # Metrics
@@ -563,6 +565,7 @@ class ProbabilisticTrainer:
         """Train for one epoch."""
         self.model.train()
         total_loss = 0.0
+        num_batches = 0
 
         for batch in tqdm(train_loader, desc='Training'):
             bbox_seq = batch['bbox_seq'].to(self.device)
@@ -586,8 +589,9 @@ class ProbabilisticTrainer:
             self.optimizer.step()
 
             total_loss += loss.item()
+            num_batches += 1
 
-        avg_loss = total_loss / len(train_loader)
+        avg_loss = total_loss / max(num_batches, 1)
         return avg_loss
 
     @torch.no_grad()
@@ -597,6 +601,7 @@ class ProbabilisticTrainer:
         total_loss = 0.0
         total_mae = 0.0
         total_uncertainty = 0.0
+        num_batches = 0
 
         for batch in val_loader:
             bbox_seq = batch['bbox_seq'].to(self.device)
@@ -619,10 +624,13 @@ class ProbabilisticTrainer:
             std = torch.exp(0.5 * pred_logvar)
             total_uncertainty += std.mean().item()
 
+            num_batches += 1
+
+        num_batches = max(num_batches, 1)
         metrics = {
-            'loss': total_loss / len(val_loader),
-            'mae': total_mae / len(val_loader),
-            'uncertainty': total_uncertainty / len(val_loader)
+            'loss': total_loss / num_batches,
+            'mae': total_mae / num_batches,
+            'uncertainty': total_uncertainty / num_batches
         }
 
         return metrics

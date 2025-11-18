@@ -197,10 +197,12 @@ def generate_data():
 
         # Save camera data
         output_file = os.path.join(OUTPUT_DIR, f'cam_{cam_id}.json')
-        with open(output_file, 'w') as f:
-            json.dump(camera_data, f, indent=2)
-
-        print(f"  ✓ Saved: {output_file}")
+        try:
+            with open(output_file, 'w') as f:
+                json.dump(camera_data, f, indent=2)
+            print(f"  ✓ Saved: {output_file}")
+        except IOError as e:
+            print(f"  ✗ Failed to save {output_file}: {e}")
 
     # Verify data
     print("\n" + "="*60)

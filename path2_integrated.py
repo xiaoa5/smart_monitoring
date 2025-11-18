@@ -241,7 +241,8 @@ class IntegratedTracker:
 
         # PCA to find principal direction
         centered = positions - mean_pos
-        cov = centered.T @ centered / len(centered)
+        num_points = max(len(centered), 1)
+        cov = centered.T @ centered / num_points
         eigenvalues, eigenvectors = np.linalg.eigh(cov)
 
         # Principal direction (largest eigenvalue)
